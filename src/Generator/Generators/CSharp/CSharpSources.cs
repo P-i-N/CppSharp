@@ -2176,6 +2176,19 @@ namespace CppSharp.Generators.CSharp
             // Output a default constructor that takes the native pointer.
             GenerateNativeConstructor(@class);
 
+            if (@class.HasPartialInitializer)
+            {
+                // Declare partial method that the partial class can implement to participate
+                // in object construction/initialization.
+                PushBlock(BlockKind.Method);
+                WriteLine("partial void InitializePartial();");
+                PopBlock(NewLineKind.BeforeNextBlock);
+
+                PushBlock(BlockKind.Method);
+                WriteLine("internal void Initialize() { InitializePartial(); }");
+                PopBlock(NewLineKind.BeforeNextBlock);
+            }
+
             foreach (var ctor in @class.Constructors)
             {
                 if (ASTUtils.CheckIgnoreMethod(ctor))
@@ -3002,6 +3015,9 @@ internal static{(@new ? " new" : string.Empty)} {printedClass} __GetInstance({Ty
             }
 
             GenerateVTableClassSetupCall(@class);
+
+            if (@class.IsPartiallyInitialized)
+                WriteLine("Initialize();");
         }
 
         public void GenerateInternalFunctionCall(Function function,

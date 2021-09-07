@@ -126,6 +126,9 @@ namespace CppSharp.AST
         // True if the class has a non trivial destructor.
         public bool HasNonTrivialDestructor;
 
+        // True if the class have generated partial initializer
+        public bool HasPartialInitializer;
+        
         // True if the class represents a static class.
         public bool IsStatic;
 
@@ -171,6 +174,23 @@ namespace CppSharp.AST
                          && BaseClass.IsGenerated;
 
         public bool NeedsBase => HasNonIgnoredBase && IsGenerated;
+
+        public bool IsPartiallyInitialized
+        {
+            get
+            {
+                if (HasPartialInitializer)
+                    return true;
+
+                foreach (var @base in Bases)
+                {
+                    if (@base.IsClass && @base.Class.IsPartiallyInitialized)
+                        return true;
+                }
+
+                return false;
+            }
+        }
 
         // When we have an interface, this is the class mapped to that interface.
         public Class OriginalClass { get; set; }
