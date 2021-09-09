@@ -2315,7 +2315,7 @@ namespace CppSharp.Generators.CSharp
                     // }
                     // 
                     // IDisposable.Dispose() and Object.Finalize() set callNativeDtor = Helpers.OwnsNativeInstanceIdentifier
-                    WriteLine($"if (callNativeDtor)");
+                    WriteLine($"if (callNativeDtor && {Helpers.InstanceIdentifier} != IntPtr.Zero)");
                     if (@class.IsDependent || dtor.IsVirtual)
                         WriteOpenBraceAndIndent();
                     else
@@ -2406,6 +2406,21 @@ internal static{(@new ? " new" : string.Empty)} {printedClass} __GetOrCreateInst
     if (NativeToManagedMap.TryGetValue(native, out var managed))
         return ({printedClass})managed;
     var result = {Helpers.CreateInstanceIdentifier}(native, skipVTables);
+    if (saveInstance)
+        NativeToManagedMap[native] = result;
+    return result;
+}}");
+                    NewLine();
+
+                    WriteLines($@"
+internal static{(@new ? " new" : string.Empty)} {printedClass} __GetOrCreateNonOwningInstance({TypePrinter.IntPtrType} native, bool saveInstance = false, bool skipVTables = false)
+{{
+    if (native == {TypePrinter.IntPtrType}.Zero)
+        return null;
+    if (NativeToManagedMap.TryGetValue(native, out var managed))
+        return ({printedClass})managed;
+    var result = {Helpers.CreateInstanceIdentifier}({TypePrinter.IntPtrType}.Zero, skipVTables);
+    result.{Helpers.InstanceIdentifier} = native;
     if (saveInstance)
         NativeToManagedMap[native] = result;
     return result;
